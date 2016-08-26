@@ -1,0 +1,336 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title></title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="Contents/jquery-ui.css" />
+    <link rel="stylesheet" type="text/css" href="Contents/jquery-ui.structure.css" />
+    <link rel="stylesheet" href="Contents/jquery.appendGrid-1.6.2.css" />
+    <style>
+        body {
+            font-size:10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <table id="tblAppendGrid"></table>
+        <br />
+        <button id="btnLoad" type="button" class="btn btn-primary">
+            Demo: Load Data
+        </button>
+    </div>
+    <script src="Scripts/jquery-3.1.0.js"></script>
+    <script src="Scripts/jquery-ui.js"></script>
+    <script src="Scripts/jquery.appendGrid-1.6.2.js"></script>
+    <script type="text/javascript">
+
+        //; (function ($) { })(jQuery);
+
+        // 這個頁面的設定值
+        var pageOptions = {
+            queryString: window.location.search.substring(1),
+            stateSettings: [
+                { State: 'View', LoadData: true, EditableColumns: [], MandatoryColumns: [] },
+                { State: 'Edit', LoadData: true, EditableColumns: ['Description', 'DeliveryDate', 'Qty', 'EstNetAmount', 'EstLocalNetAmount'], MandatoryColumns: [] },
+                { State: 'Add', LoadData: false, EditableColumns: ['Description', 'DeliveryDate', 'Qty', 'EstNetAmount', 'EstLocalNetAmount'], MandatoryColumns: ['SapPRNo'] }
+            ],
+            selectAction: '/Ashx/GetPRList.ashx',
+            updateAction: '/Ashx/.ashx',
+            deleteAction: '/Ashx/DeletePRDetail.ashx',
+            currentStateSetting: null,
+            
+            init: function () {
+                // parser queryString 並取回目前的狀態值
+                var stateValue = getQueryStringValue(pageOptions.queryString, 'State');
+
+                if (stateValue === '') stateValue = 'Add';
+                
+                // 
+                for (var i = 0; i < pageOptions.stateSettings.length; i++) {
+                    var thisStateSetting = pageOptions.stateSettings[i];
+
+                    if (thisStateSetting.State === stateValue) {
+                        this.currentStateSetting = thisStateSetting;
+                        break;
+                    }
+                }
+            },
+            setRowEditable: function (rowIndex) {
+
+                if ($.isEmptyObject(this.currentStateSetting)) return;
+
+                if ($.isArray(this.currentStateSetting.EditableColumns) && (this.currentStateSetting.EditableColumns.length > 0)) {
+                    for (var j = 0; j < this.currentStateSetting.EditableColumns.length; j++) {
+                        var columnName = this.currentStateSetting.EditableColumns[j];
+                        var elem = $('#tblAppendGrid').appendGrid('getCellCtrl', columnName, rowIndex);
+                        $(elem).removeAttr('readonly').removeAttr('disabled').css('background-color', 'lightgray');
+                        console.log(elem);
+                    }
+                }
+
+                if ($.isArray(this.currentStateSetting.MandatoryColumns) && (this.currentStateSetting.MandatoryColumns.length > 0)) {
+                    for (var j = 0; j < this.currentStateSetting.MandatoryColumns.length; j++) {
+                        var columnName = this.currentStateSetting.MandatoryColumns[j];
+                        var elem = $('#tblAppendGrid').appendGrid('getCellCtrl', columnName, rowIndex);
+                        $(elem).removeAttr('readonly').removeAttr('disabled').css('background-color', 'crimson');
+                        console.log(elem);
+                    }
+                }
+
+            }
+        };
+
+        $(function () {
+            // 初始化頁面資訊
+            pageOptions.init();
+
+            // 開始載入 AppendGrid 並 Render 畫面
+            $('#tblAppendGrid').appendGrid({
+                //caption: 'put your title here',
+                initRows: 1,
+                columns: [
+                    { name: 'ID', display: 'ID', type: 'text', ctrlProp: { readonly: 'readonly' }, ctrlCss: { width: '90px' } },
+                    { name: 'SapPRNo', display: 'SAP PR No', type: 'custom', customBuilder: sapPRNoTypeBuilder, customGetter: sapPRNoTypeGetter, customSetter: sapPRNoTypeSetter },
+                    { name: 'ExpenseCategory', display: 'Expense Category', type: 'text', value: 'S&P', ctrlProp: { readonly: 'readonly' } },
+                    { name: 'Brand', display: 'Brand', type: 'custom', customBuilder: brandTypeBuilder, customGetter: brandTypeGetter, customSetter: brandTypeSetter },
+                    { name: 'Description', display: 'Description', type: 'text', ctrlProp: { readonly: 'readonly' } },
+                    { name: 'DeliveryDate', display: 'Delivery Date', type: 'ui-datepicker', ctrlProp: { readonly: 'readonly' } },
+                    { name: 'UnitPrice', display: 'Unit Price', type: 'text', ctrlProp: { readonly: 'readonly' } },
+                    { name: 'Qty', display: 'Qty', type: 'text', ctrlProp: { readonly: 'readonly' } },
+                    { name: 'Unit', display: 'Unit', type: 'text', ctrlProp: { readonly: 'readonly' }, value: 'EA' },
+                    { name: 'EstNetAmount', display: 'Est. Net Amount', type: 'number', ctrlProp: { readonly: 'readonly' }, ctrlCss: { width: '90px' }, onChange: onEstNetAmountChange },
+                    { name: 'EstLocalNetAmount', display: 'Est. Local Net Amount', type: 'number', ctrlProp: { readonly: 'readonly' }, ctrlCss: {width:'60px'} },
+                    { name: 'WBSCode', display: 'WBSCode', type: 'text', ctrlProp: { readonly: 'readonly' } },
+                    { name: 'PurchaseGroup', display: 'Purchase Group', type: 'text', ctrlProp: { readonly: 'readonly' } },
+                    { name: 'Cancelled', display: 'Cancelled', type: 'checkbox', ctrlProp: { readonly: 'readonly' } },
+                    { name: 'CancelledFormNo', display: 'Cancelled Form No', type: 'text', ctrlProp: { readonly: 'readonly' } }
+                ],
+                hideRowNumColumn: true,
+                rowButtonsInFront: true,
+                hideButtons: {
+                    append: true,
+                    removeLast: true,
+                    insert: true,
+                    remove: false,
+                    moveUp: true,
+                    moveDown: true
+                },
+                customRowButtons: [
+                    {
+                        uiButton: { icons: { primary: 'ui-icon-disk' }, text: false },
+                        click: updateModal,
+                        btnAttr: { title: '儲存這筆資料' }, atTheFront: true
+                    },
+                    {
+                        uiButton: { icons: { primary: 'ui-icon-pencil' } },
+                        click: setRowEditable,
+                        btnAttr: { title: '修改這筆資料' },
+                        btnClass: 'print'
+                    }
+                ],
+                customFooterButtons: [
+            {
+                uiButton: { icons: { primary: 'ui-icon-plus' }, text: false },
+                btnAttr: { title: 'Add new' },
+                click: function (evt) {
+                    var count = $('#tblAppendGrid').appendGrid('getRowCount');
+                    var rowOrder = $('#tblAppendGrid').appendGrid('getRowOrder');
+
+                    var lastRow = rowOrder[rowOrder.length - 1];
+                    var firstRow = rowOrder[0];
+                    var totalRowCount = rowOrder.length;
+
+                    if (!isRowEmpty(count - 1)) {
+                        $('#tblAppendGrid').appendGrid('appendRow', 1);
+                    }
+                }
+            }
+                ],
+                rowDataLoaded: onRowDataLoaded,
+                afterRowAppended: onAfterRowAppended,
+                beforeRowRemove: onBeforeRowRemove
+            });
+        });
+
+        $('#btnLoad').button().click(function () {
+            $.ajax({
+                url: '/Ashx/GetPRList.ashx',
+                type: 'GET',
+                contentType: 'application/json; charset=utf-8',
+                dataType: 'json',
+                success: function (result) {
+                    var resultInStr = JSON.stringify(result);
+                    var modal = JSON.parse(resultInStr);
+                    $('#tblAppendGrid').appendGrid('load', modal);
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    alert(errorThrown);
+                }
+            });
+
+        });
+
+        function onRowDataLoaded(caller, record, rowIndex, uniqueIndex) {
+            
+            console.log('rowDataLoaded : rowIndex=' + rowIndex + ' uniqueIndex=' + uniqueIndex + ' Student.No=' + record.No + ' Student.Name=' + record.Name);
+        }
+
+        function onAfterRowAppended(caller, parentRowIndex, addedRowIndex) {
+            pageOptions.setRowEditable(addedRowIndex);
+            console.log(parentRowIndex+' : '+ addedRowIndex);
+        }
+
+        function onBeforeRowRemove(caller, rowIndex) {
+
+            // 空白 row 不刪除
+            if (isRowEmpty(rowIndex)) return false;
+
+            // 取回 modal
+            var uniqueIndex = $('#tblAppendGrid').appendGrid('getUniqueIndex', rowIndex);
+            var modal = $('#tblAppendGrid').appendGrid('getRowValue', rowIndex);
+
+            // TODO: 判斷 modal 為空白時不刪除
+            console.log(modal);
+            //if (!modal.Id) return false;
+
+            if (confirm('你確定要刪除資料嗎?')) {
+                return onModalDeleting(modal);
+            }
+
+            return false;
+        }
+
+        function updateModal(evtObj, uniqueIndex, rowData) {
+            //console.log(rowData.SapPRNo);
+            var isUpdated = onModalUpdating(rowData);
+
+            if (isUpdated) {
+
+                // 判斷目前還有沒有尚未儲存的 row
+
+                // 增加一筆資料列
+                $('#tblAppendGrid').appendGrid('appendRow', 1);
+            }
+        }
+
+        function setRowEditable(evtObj, uniqueIndex, rowData) {
+            // 取得該筆資料位列表格的第幾列
+            var rowIndex = $('#tblAppendGrid').appendGrid('getRowIndex', uniqueIndex);
+
+            pageOptions.setRowEditable(rowIndex);
+        }
+
+        function onModalUpdating(modal) { }
+
+        function onModalDeleting(modal) {
+            var isRemoved = false;
+
+            $.ajax({
+                url: '/Ashx/DeletePRDetail.ashx',
+                type: 'POST',
+                data: JSON.stringify(modal),
+                contentType: 'application/json; charset=utf-8',
+                async: false,
+                success: function (result) {
+                    isRemoved = true;
+                    alert(result);
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    alert(errorThrown);
+                }
+            });
+
+            return isRemoved;
+        }
+
+        //
+        function onEstNetAmountChange(evt, rowIndex) {
+            var modal = $('#tblAppendGrid').appendGrid('getRowValue', rowIndex);
+            var val = modal.EstNetAmount;
+            var v2 = modal.Qty;
+
+            var elem = $('#tblAppendGrid').appendGrid('getCellCtrl','UnitPrice', rowIndex);
+            $(elem).val('22');
+            alert(val);
+        }
+
+        // SAP PR No 欄位 custom type 相關函式
+        function sapPRNoTypeBuilder(parent, idPrefix, name, uniqueIndex) {
+            // 利用 idPrefix, column name 及 uniqueIndex 組成 html control 的 Id
+            var ctrlId = idPrefix + '_' + name + '_' + uniqueIndex;
+            // Create a span as a container
+            var ctrl = document.createElement('span');
+            // Set the ID and name to container and append it to parent control which is a table cell
+            $(ctrl).attr({ id: ctrlId, name: ctrlId }).appendTo(parent);
+            // Create extra controls and add to container
+            $('<input />', { type: 'text', id: ctrlId + '_LookupValue' }).css('width', '90px').appendTo(ctrl);
+            $('<button />', { type: 'button', id: ctrlId + '_Lookup', value: "Lookup" }).button({ icons: { primary: ' ui-icon-search' } }).click(function () { sapPRNoLookup(uniqueIndex); }).appendTo(ctrl);
+
+            // 最後回傳 control
+            return ctrl;
+        }
+        function sapPRNoTypeGetter(idPrefix, name, uniqueIndex) {
+            var ctrlId = idPrefix + '_' + name + '_' + uniqueIndex;
+            // Get the value
+            var value = $('#' + ctrlId + '_LookupValue').val();
+            return value;
+        }
+        function sapPRNoTypeSetter(idPrefix, name, uniqueIndex, value) {
+            // idPrefix, column name and uniqueIndex
+            var ctrlId = idPrefix + '_' + name + '_' + uniqueIndex;
+            // 要將 value 切成個值
+            $('#' + ctrlId + '_LookupValue').val(value);
+        }
+        function sapPRNoLookup(uniqueIndex) {
+            alert(uniqueIndex);
+        }
+        //
+        function brandTypeBuilder(parent, idPrefix, name, uniqueIndex) {
+            // 利用 idPrefix, column name 及 uniqueIndex 組成 html control 的 Id
+            var ctrlId = idPrefix + '_' + name + '_' + uniqueIndex;
+            // Create a span as a container
+            var ctrl = document.createElement('span');
+            // Set the ID and name to container and append it to parent control which is a table cell
+            $(ctrl).attr({ id: ctrlId, name: ctrlId }).appendTo(parent);
+            // Create extra controls and add to container
+            $('<input />', { type: 'text', id: ctrlId + '_LookupValue' }).css('width', '90px').appendTo(ctrl);
+            $('<button />', { type: 'button', id: ctrlId + '_Lookup', value: "Lookup" }).button({ icons: { primary: ' ui-icon-search' } }).click(function () { sapPRNoLookup(uniqueIndex); }).appendTo(ctrl);
+
+            // 最後回傳 control
+            return ctrl;
+        }
+        function brandTypeGetter(idPrefix, name, uniqueIndex) {
+            var ctrlId = idPrefix + '_' + name + '_' + uniqueIndex;
+            // Get the value
+            var value = $('#' + ctrlId + '_LookupValue').val();
+            return value;
+        }
+        function brandTypeSetter(idPrefix, name, uniqueIndex, value) {
+            // idPrefix, column name and uniqueIndex
+            var ctrlId = idPrefix + '_' + name + '_' + uniqueIndex;
+            // 要將 value 切成個值
+            $('#' + ctrlId + '_LookupValue').val(value);
+        }
+        function brankLookup(uniqueIndex) {
+            alert(uniqueIndex);
+        }
+        // Utilies
+        // 取回 QueryString 上的值
+        function getQueryStringValue(queryString, key) {
+            var pairs = queryString.split("&");
+            for (i = 0; i < pairs.length; i++) {
+                var keyValue = pairs[i].split("=");
+                if (keyValue[0] == key) return keyValue[1];
+            }
+            return "";
+        };
+        // 
+        function isRowEmpty(rowIndex) {
+            return $('#tblAppendGrid').appendGrid('isRowEmpty', rowIndex);
+        }
+
+    </script>
+</body>
+</html>
