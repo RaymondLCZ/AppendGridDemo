@@ -8,10 +8,17 @@ namespace AppendGridWeb.Models
 {
     public class PRDetail
     {
+        private string expenseCategory;
+        private string unit;
+
         public int ID { get; set; }
         public string SapPRNo { get; set; }
+        public string ExpenseCategory { get {return "S&P"; } set {expenseCategory = value; } }
+        public string Brand { get; set; }
         public string Description { get; set; }
         public DateTime DeliveryDate { get; set; }
+        public int Qty { get; set; }
+        public string Unit { get {return "EA"; } set {unit=value; } }
         public decimal EstNetAmount { get; set; }
         public decimal EstCNYNetAmount { get; set; }
         public Boolean Cancelled { get; set; }
@@ -28,6 +35,7 @@ namespace AppendGridWeb.Models
                 DeliveryDate = DateTime.Today,
                 EstNetAmount = 100,
                 EstCNYNetAmount = 100,
+                Qty= 1,
                 Cancelled = false
             };
             details.Add(item1);
@@ -40,6 +48,7 @@ namespace AppendGridWeb.Models
                 DeliveryDate = DateTime.Today.AddDays(-1),
                 EstNetAmount = 100.0m,
                 EstCNYNetAmount = 101.0m,
+                Qty = 3,
                 Cancelled = true
             };
             details.Add(item2);

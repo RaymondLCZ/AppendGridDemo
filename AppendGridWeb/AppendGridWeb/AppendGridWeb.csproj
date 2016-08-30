@@ -105,6 +105,7 @@
     <None Include="Scripts\jquery-3.1.0.intellisense.js" />
     <Content Include="index.html" />
     <Content Include="sample.html" />
+    <Content Include="SapPrNoLookup.html" />
     <Content Include="Scripts\jquery-3.1.0.js" />
     <Content Include="Scripts\jquery-ui.js" />
     <None Include="Scripts\_references.js" />
